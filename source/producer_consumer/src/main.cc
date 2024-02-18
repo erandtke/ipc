@@ -51,6 +51,7 @@ void Consumer(std::queue<Item> &sharedQueue, std::mutex &m, std::condition_varia
     while(not completed or not sharedQueue.empty())
     {
         std::optional<Item> item;
+        if(sharedQueue.empty() and completed == false)
         {
             std::unique_lock lk(m);
             cv.wait(lk, [&]{return !sharedQueue.empty() or completed;});
@@ -65,7 +66,7 @@ void Consumer(std::queue<Item> &sharedQueue, std::mutex &m, std::condition_varia
 
         if(item)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds{50});
+            std::this_thread::sleep_for(std::chrono::milliseconds{150});
             std::cout << "consumer: " << item.value() << std::endl;
             std::cout << "consumer completed? " << (completed ? "yes" : "no") << std::endl;
         }
