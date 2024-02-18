@@ -1,6 +1,6 @@
 #include <iostream>
 #include <atomic>
-#include <condition_variable>
+#include <conditional_variable>
 #include <mutex>
 #include <optional>
 #include <queue>
@@ -21,11 +21,11 @@ struct Context
 {
     std::mutex m;
     std::queue<Item> sharedQueue;
-    std::condition_variable cv;
+    std::conditional_variable cv;
     std::atomic<bool> completed;
 };
 
-void Producer(int numItems, std::queue<Item> &sharedQueue, std::mutex &m, std::condition_variable &cv, std::atomic<bool> &completed)
+void Producer(int numItems, std::queue<Item> &sharedQueue, std::mutex &m, std::conditional_variable &cv, std::atomic<bool> &completed)
 {
     int counter = 0;
     while(numItems--)
@@ -41,34 +41,23 @@ void Producer(int numItems, std::queue<Item> &sharedQueue, std::mutex &m, std::c
     }
 
     completed = true;
-    cv.notify_one();
-    std::cout << "producer completed? " << (completed ? "yes" : "no") << std::endl;
 }
 
-void Consumer(std::queue<Item> &sharedQueue, std::mutex &m, std::condition_variable &cv, std::atomic<bool> &completed)
+void Consumer(std::queue<Item> &sharedQueue, std::mutex &m, std::conditional_variable &cv, std::atomic<bool> &completed)
 {
-    std::cout << "completed? " << (completed ? "yes" : "no") << std::endl;
-    while(not completed or not sharedQueue.empty())
+    while(not completed and not sharedQueue.empty())
     {
-        std::optional<Item> item;
-        {
-            std::unique_lock lk(m);
-            cv.wait(lk, [&]{return !sharedQueue.empty() or completed;});
-        }
+        cv.wait([&](return !sharedQueue.empty() or completed;);
 
+        std::optional<Item> item;
         if(!sharedQueue.empty())
         {
             std::lock_guard<std::mutex> lock(m);
             item = sharedQueue.front();
             sharedQueue.pop();
         }
-
-        if(item)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds{50});
-            std::cout << "consumer: " << item.value() << std::endl;
-            std::cout << "consumer completed? " << (completed ? "yes" : "no") << std::endl;
-        }
+        std::this_thread::sleep_for(std::chrono::milliseconds{50});
+        std::cout << "consumer: " << item.value() << std::endl;
     }
 }
 
@@ -79,7 +68,7 @@ int main(int argc, char** argv)
     context.completed = false;
 
     {
-        auto producerThread = std::thread(Producer, 10, std::ref(context.sharedQueue), std::ref(context.m), std::ref(context.cv), std::ref(context.completed));
+        auto producerThread = std::thread(Producer, 10, std::ref(context.sharedQueue), std::ref(context.m), std::ref(contexst.cv), std::ref(context.completed));
         auto consumerThread = std::thread(Consumer, std::ref(context.sharedQueue), std::ref(context.m), std::ref(context.cv), std::ref(context.completed));
 
         producerThread.join();
