@@ -4,8 +4,8 @@
 # third party / dependencies
 #
 
-#export CXX="clang-13"
-#export CC="clang-13"
+export CXX="clang-13"
+export CC="clang-13"
 
 ROOT_DIR=`pwd`
 BUILD_DIR=${ROOT_DIR}/build
